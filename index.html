@@ -1,0 +1,393 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>对不起 💌</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  min-height:100vh;min-height:100dvh;
+  background:linear-gradient(135deg,#fce4ec 0%,#f8bbd0 30%,#fff3e0 70%,#ffe0b2 100%);
+  display:flex;align-items:center;justify-content:center;
+  overflow-x:hidden;-webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+}
+#particlesCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.container{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:360px;padding:20px}
+
+/* Envelope */
+.envelope-wrapper{position:relative;width:280px;height:200px;cursor:pointer;perspective:600px;transition:transform .3s}
+.envelope-wrapper:active{transform:scale(.97)}
+.envelope-body{position:absolute;bottom:0;width:100%;height:155px;background:linear-gradient(180deg,#f8a5b5,#e5738c);border-radius:0 0 12px 12px;box-shadow:0 8px 30px rgba(180,60,90,.3)}
+.seal{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:36px;height:36px;z-index:5;font-size:28px;display:flex;align-items:center;justify-content:center;transition:transform .5s,opacity .5s}
+.seal.hidden{transform:translateX(-50%) scale(0);opacity:0}
+.envelope-flap{position:absolute;top:-2px;left:0;width:100%;height:120px;background:linear-gradient(180deg,#f48fb1,#ec7a93);clip-path:polygon(0 0,50% 100%,100% 0);border-radius:12px 12px 0 0;transform-origin:top center;transition:transform .8s cubic-bezier(.4,0,.2,1);z-index:4;backface-visibility:hidden;box-shadow:0 4px 15px rgba(180,60,90,.25)}
+.envelope-flap.open{transform:rotateX(-180deg)}
+.envelope-letter-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;height:80%;background:#fffef9;border-radius:4px;z-index:2;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:.3;box-shadow:inset 0 0 20px rgba(0,0,0,.03)}
+.envelope-letter-hint .line{width:60%;height:3px;background:#e0d5d5;border-radius:2px;margin:5px 0}
+.envelope-tap-hint{position:absolute;bottom:-45px;width:100%;text-align:center;color:#b06a7a;font-size:14px;letter-spacing:1px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.6;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+
+/* Letter */
+.letter-paper{display:none;width:100%;max-width:320px;background:#fffef9;border-radius:12px;padding:28px 24px;box-shadow:0 10px 40px rgba(140,50,70,.15);position:relative;transform:translateY(20px);opacity:0;transition:all .6s cubic-bezier(.4,0,.2,1);margin-top:-20px;min-height:240px}
+.letter-paper.visible{transform:translateY(0);opacity:1}
+.letter-paper::before{content:'';position:absolute;top:0;left:18px;width:1px;height:100%;background:repeating-linear-gradient(to bottom,transparent,transparent 26px,#f0e0e0 26px,#f0e0e0 27px);opacity:.5}
+.letter-title{font-size:20px;color:#c94f6a;text-align:center;margin-bottom:16px;font-weight:600}
+.letter-text{font-size:15px;color:#5a3a3a;line-height:1.9;min-height:140px;white-space:pre-line}
+.typewriter-cursor{display:inline-block;width:2px;height:18px;background:#c94f6a;margin-left:1px;vertical-align:text-bottom;animation:blink .7s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* In-letter choices */
+.letter-choices{display:none;flex-direction:column;gap:10px;margin-top:18px;align-items:center}
+.letter-choices.visible{display:flex;animation:fadeSlideUp .4s ease forwards}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.choice-btn{padding:11px 28px;border-radius:50px;font-size:14px;font-weight:600;letter-spacing:1px;cursor:pointer;border:none;transition:all .2s;width:85%}
+.choice-btn:active{transform:scale(.96)}
+.choice-yes{background:linear-gradient(135deg,#f06292,#e57373);color:#fff;box-shadow:0 4px 14px rgba(230,80,110,.3)}
+.choice-no{background:transparent;color:#c48a95;border:1.5px solid #e0b4be}
+
+/* Bottom buttons */
+.btn-row{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:28px;width:100%;max-width:320px}
+.btn-row.visible{display:flex;animation:fadeSlideUp .5s ease forwards}
+.btn-forgive{padding:15px 52px;background:linear-gradient(135deg,#f06292,#e57373);color:#fff;border:none;border-radius:50px;font-size:17px;font-weight:600;letter-spacing:2px;cursor:pointer;box-shadow:0 6px 24px rgba(230,80,110,.35);transition:all .25s;width:100%}
+.btn-forgive:active{transform:scale(.96);box-shadow:0 3px 12px rgba(230,80,110,.5)}
+.btn-no{padding:12px 40px;background:transparent;color:#c48a95;border:1.5px solid #e0b4be;border-radius:50px;font-size:14px;font-weight:500;letter-spacing:1px;cursor:pointer;transition:all .25s;width:70%}
+.btn-no:active{background:rgba(200,140,160,.1);border-color:#c48a95}
+.thank-you{display:none;font-size:22px;color:#c94f6a;text-align:center;margin-top:24px;font-weight:600;animation:fadeInScale .8s ease forwards}
+@keyframes fadeInScale{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+
+/* Achievement card */
+.achievement-card{display:none;margin-top:20px;background:#fffef9;border-radius:16px;padding:20px 24px;text-align:center;box-shadow:0 4px 24px rgba(140,50,70,.12);animation:fadeInScale .6s ease forwards;max-width:280px;width:100%}
+.achievement-title{font-size:16px;font-weight:700;color:#c94f6a;margin-bottom:8px}
+.achievement-badge{font-size:30px;padding:6px 0 10px;letter-spacing:6px}
+.achievement-name{font-size:15px;color:#5a3a3a;font-weight:600;margin-top:2px}
+.achievement-hint{font-size:13px;color:#b38a90;margin-top:10px;letter-spacing:1px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(60,20,30,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.active{opacity:1;pointer-events:auto}
+.modal-card{background:#fffef9;border-radius:18px;padding:30px 24px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 16px 48px rgba(80,20,40,.25);transform:scale(.85);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.overlay.active .modal-card{transform:scale(1)}
+.modal-emoji{font-size:52px;margin-bottom:12px;animation:bounceIn .6s ease}
+@keyframes bounceIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.modal-title{font-size:19px;color:#5a3a3a;font-weight:600;margin-bottom:8px}
+.modal-subtitle{font-size:14px;color:#b38a90;margin-bottom:18px;line-height:1.8;white-space:normal}
+.modal-buttons{display:flex;flex-direction:column;gap:10px;align-items:center}
+.modal-btn-primary{padding:14px 40px;background:linear-gradient(135deg,#f06292,#e57373);color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:600;letter-spacing:1px;cursor:pointer;box-shadow:0 4px 16px rgba(230,80,110,.3);width:100%;transition:transform .2s}
+.modal-btn-primary:active{transform:scale(.95)}
+.modal-btn-secondary{padding:12px 32px;background:transparent;color:#b38a90;border:1.5px solid #e0c8cd;border-radius:50px;font-size:14px;font-weight:500;cursor:pointer;width:70%;transition:all .2s}
+.modal-btn-secondary:active{background:rgba(200,140,160,.08)}
+
+/* Apology action list */
+.apology-list{text-align:left;margin:8px 0 4px}
+.apology-item{padding:9px 4px;font-size:14px;color:#5a3a3a;border-bottom:1px dashed #f0e0e0;line-height:1.6}
+.apology-item:last-child{border-bottom:none}
+
+/* Burst hearts */
+.burst-heart{position:fixed;font-size:24px;pointer-events:none;z-index:200;animation:burstFly 2s ease-out forwards}
+@keyframes burstFly{0%{opacity:1;transform:translate(0,0) scale(.5) rotate(0deg)}60%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.2) rotate(var(--rot))}}
+
+/* Hidden path viewer */
+.path-trigger{position:fixed;bottom:6px;right:14px;font-size:11px;color:rgba(180,120,140,.18);cursor:pointer;z-index:50;padding:12px 10px;-webkit-tap-highlight-color:transparent;user-select:none}
+.path-panel{position:fixed;bottom:-300px;left:50%;transform:translateX(-50%);background:#fffef9;border-radius:14px;padding:20px 24px;box-shadow:0 -4px 28px rgba(80,20,40,.18);z-index:300;max-width:280px;width:88%;transition:bottom .4s cubic-bezier(.34,1.56,.64,1);text-align:center}
+.path-panel.visible{bottom:24px}
+.path-title{font-size:15px;font-weight:600;color:#c94f6a;margin-bottom:12px}
+.path-rows{font-size:14px;color:#5a3a3a;line-height:2.2}
+.path-close{margin-top:14px;padding:7px 24px;background:transparent;border:1px solid #e0c8cd;border-radius:50px;color:#b38a90;font-size:13px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<canvas id="particlesCanvas"></canvas>
+
+<div class="container">
+
+  <div class="envelope-wrapper" id="envelopeWrapper">
+    <div class="envelope-body"></div>
+    <div class="envelope-letter-hint">
+      <div class="line"></div>
+      <div class="line" style="width:45%"></div>
+      <div class="line" style="width:55%"></div>
+      <div class="line" style="width:35%"></div>
+    </div>
+    <div class="envelope-flap" id="envelopeFlap"></div>
+    <div class="seal" id="seal">❤️</div>
+    <div class="envelope-tap-hint" id="tapHint">👆 点一下打开</div>
+  </div>
+
+  <div class="letter-paper" id="letterPaper">
+    <div class="letter-title">💌 致特别的你</div>
+    <div class="letter-text" id="letterText"></div>
+    <span class="typewriter-cursor" id="cursor"></span>
+    <div class="letter-choices" id="letterChoices">
+      <button class="choice-btn choice-yes" id="choiceYes">想我，超级想！💕</button>
+      <button class="choice-btn choice-no" id="choiceNo">才不想你呢 😒</button>
+    </div>
+  </div>
+
+  <div class="btn-row" id="btnRow">
+    <button class="btn-forgive" id="btnForgive">原谅我好吗？💕</button>
+    <button class="btn-no" id="btnNo">😤 不想原谅</button>
+  </div>
+
+  <div class="thank-you" id="thankYou">陈同学最好了 ❤️</div>
+  <div class="achievement-card" id="achievementCard">
+    <div class="achievement-title">🏆 成就解锁</div>
+    <div class="achievement-badge" id="achievementBadge"></div>
+    <div class="achievement-hint">📸 截图发给TA领奖～</div>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay1">
+  <div class="modal-card">
+    <div class="modal-emoji">🥺</div>
+    <div class="modal-title">真的不原谅我吗？</div>
+    <div class="modal-subtitle">再给我一次机会好不好...</div>
+    <div class="modal-buttons">
+      <button class="modal-btn-primary" id="modal1No">😤 就不原谅！</button>
+      <button class="modal-btn-secondary" id="modal1Think">🤔 我再想想...</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay2">
+  <div class="modal-card" id="modal2Card">
+    <div class="modal-emoji" id="modal2Emoji">🙇</div>
+    <div class="modal-title" id="modal2Title">那这样——我用实际行动道歉</div>
+    <div class="modal-subtitle" id="modal2Sub"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn-primary" id="modal2Ok" style="display:none;">说到做到哦 😤💕</button>
+    </div>
+  </div>
+</div>
+
+<div class="path-trigger" id="pathTrigger">·</div>
+<div class="path-panel" id="pathPanel">
+  <div class="path-title">📊 她的选择路线</div>
+  <div class="path-rows" id="pathRows"></div>
+  <button class="path-close" id="pathClose">知道了</button>
+</div>
+
+<script>
+(function(){
+// ── Canvas ──
+var canvas=document.getElementById('particlesCanvas');
+var ctx=canvas.getContext('2d');
+var particles=[];
+var w,h;
+function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
+resize();addEventListener('resize',resize);
+
+function drawHeart(cx,cy,s){
+  ctx.beginPath();
+  ctx.moveTo(cx,cy+s*.3);
+  ctx.bezierCurveTo(cx,cy,cx-s,cy,cx-s,cy+s*.3);
+  ctx.bezierCurveTo(cx-s,cy+s*.65,cx,cy+s*.9,cx,cy+s*1.15);
+  ctx.bezierCurveTo(cx,cy+s*.9,cx+s,cy+s*.65,cx+s,cy+s*.3);
+  ctx.bezierCurveTo(cx+s,cy,cx,cy,cx,cy+s*.3);
+  ctx.fill();
+}
+var heartColors=['rgba(240,130,150,.35)','rgba(240,120,160,.28)','rgba(250,160,180,.32)','rgba(255,180,190,.30)','rgba(245,140,170,.25)','rgba(235,150,140,.30)'];
+for(var i=0;i<35;i++)particles.push({type:Math.random()>.3?'heart':'circle',x:Math.random()*w,y:Math.random()*h,size:3+Math.random()*8,speedY:.15+Math.random()*.55,speedX:(Math.random()-.5)*.4,opacity:.18+Math.random()*.3,wobble:Math.random()*Math.PI*2,wobbleSpeed:.005+Math.random()*.02,color:heartColors[Math.floor(Math.random()*heartColors.length)]});
+function animParticles(){
+  ctx.clearRect(0,0,w,h);
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];
+    p.y-=p.speedY;p.wobble+=p.wobbleSpeed;p.x+=p.speedX+Math.sin(p.wobble)*.3;
+    if(p.y<-20){p.y=h+20;p.x=Math.random()*w}
+    if(p.x<-20)p.x=w+20;if(p.x>w+20)p.x=-20;
+    ctx.save();ctx.globalAlpha=p.opacity;ctx.fillStyle=p.color;
+    if(p.type==='heart')drawHeart(ctx,p.x,p.y,p.size);
+    else{ctx.beginPath();ctx.arc(ctx,p.x,p.y,p.size*.5,0,Math.PI*2);ctx.fill()}
+    ctx.restore();
+  }
+  requestAnimationFrame(animParticles);
+}
+animParticles();
+
+// ── Path tracking ──
+var path={choice:null,forgive:null};
+function savePath(){try{localStorage.setItem('sorry_path',JSON.stringify(path))}catch(e){}}
+function loadPath(){try{return JSON.parse(localStorage.getItem('sorry_path'))}catch(e){return null}}
+
+// ── Typewriter ──
+var part1=[
+  '致陈同学，',
+  '我们相识已经二十九天，',
+  '从初识，到渐渐暧昧。',
+  '我渐渐在意你对我的想法，',
+  '所以总是问你想不想我。'
+];
+var part2=[
+  '',
+  '和你聊天、相处的每一刻，',
+  '我都很珍惜。',
+  '时间再慢点吧，',
+  '我想在慢下来的世界多了解你一点。',
+  '',
+  '所以——',
+  '',
+  '对不起。'
+];
+var full1=part1.join('\n'),full2=part2.join('\n');
+var letterEl=document.getElementById('letterText');
+var cursorEl=document.getElementById('cursor');
+var charIdx=0,pastBreak=false,feedbackText='',typewriterDone=false;
+
+function typeNextChar(){
+  if(!pastBreak){
+    if(charIdx<full1.length){
+      letterEl.textContent=full1.slice(0,charIdx+1);
+      charIdx++;
+      var d=full1[charIdx-1]==='\n'?120:40+Math.random()*50;
+      setTimeout(typeNextChar,d);
+    }else{
+      pastBreak=true;cursorEl.style.display='none';
+      document.getElementById('letterChoices').classList.add('visible');
+    }
+  }else if(feedbackText){
+    var combined=feedbackText+'\n\n'+full2;
+    if(charIdx<combined.length){
+      letterEl.textContent=full1+'\n\n'+combined.slice(0,charIdx+1);
+      charIdx++;
+      var d2=combined[charIdx-1]==='\n'?120:40+Math.random()*50;
+      setTimeout(typeNextChar,d2);
+    }else{
+      typewriterDone=true;cursorEl.style.display='none';
+      var br=document.getElementById('btnRow');
+      br.style.display='flex';setTimeout(function(){br.classList.add('visible')},50);
+    }
+  }
+}
+
+document.getElementById('choiceYes').addEventListener('click',function(){
+  path.choice='yes';savePath();
+  document.getElementById('letterChoices').classList.remove('visible');
+  feedbackText='（嘿嘿，我就知道 😊❤️）';charIdx=0;
+  cursorEl.style.display='inline-block';typeNextChar();
+});
+document.getElementById('choiceNo').addEventListener('click',function(){
+  path.choice='no';savePath();
+  document.getElementById('letterChoices').classList.remove('visible');
+  feedbackText='（🥺 那我更要努力让你想我了！）';charIdx=0;
+  cursorEl.style.display='inline-block';typeNextChar();
+});
+
+// ── Burst & Celebrate ──
+function spawnBurst(x,y,n){
+  var emojis=['❤️','💕','💖','💗','💝','✨','🌸','💐'];
+  for(var i=0;i<n;i++){
+    var el=document.createElement('span');
+    el.className='burst-heart';
+    el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left=x+'px';el.style.top=y+'px';
+    el.style.setProperty('--dx',(Math.random()-.5)*350+'px');
+    el.style.setProperty('--dy',-(80+Math.random()*250)+'px');
+    el.style.setProperty('--rot',(Math.random()-.5)*200+'deg');
+    el.style.animationDelay=Math.random()*.35+'s';
+    el.style.fontSize=(18+Math.random()*24)+'px';
+    document.body.appendChild(el);
+    setTimeout(function(){el.remove()},2600);
+  }
+}
+function celebrate(src){
+  document.getElementById('btnRow').style.display='none';
+  document.getElementById('thankYou').style.display='block';
+  var r=src.getBoundingClientRect();
+  spawnBurst(r.left+r.width/2,r.top+r.height/2,35);
+  for(var i=0;i<20;i++)particles.push({type:'heart',x:r.left+r.width/2,y:r.top+r.height/2,size:4+Math.random()*6,speedY:.8+Math.random()*1.5,speedX:(Math.random()-.5)*1.5,opacity:.4+Math.random()*.4,wobble:Math.random()*Math.PI*2,wobbleSpeed:.01+Math.random()*.04,color:heartColors[Math.floor(Math.random()*heartColors.length)]});
+  // Achievement card
+  setTimeout(function(){
+    var card=document.getElementById('achievementCard');
+    var badge=document.getElementById('achievementBadge');
+    var p=loadPath();
+    if(p&&card){
+      var emojiSeq='',name='';
+      if(p.choice==='yes'&&p.forgive==='direct'){emojiSeq='💕 ✨ 💕';name='双向奔赴'}
+      else if(p.choice==='yes'&&p.forgive==='modal2'){emojiSeq='💕 🛒 😤';name='购物车战神'}
+      else if(p.choice==='no'&&p.forgive==='direct'){emojiSeq='😤 💕 ✨';name='嘴硬心软'}
+      else if(p.choice==='no'&&p.forgive==='modal2'){emojiSeq='😤 🍜 🛒';name='吃货认证'}
+      else{emojiSeq='💌 🌸 ✨';name='神秘彩蛋'}
+      badge.innerHTML=emojiSeq+'<div class="achievement-name">'+name+'</div>';
+      card.style.display='block';
+    }
+  },1200);
+}
+
+// ── Envelope ──
+var opened=false;
+document.getElementById('envelopeWrapper').addEventListener('click',function(){
+  if(opened)return;opened=true;
+  document.getElementById('envelopeFlap').classList.add('open');
+  document.getElementById('seal').classList.add('hidden');
+  document.getElementById('tapHint').style.display='none';
+  setTimeout(function(){
+    document.getElementById('envelopeWrapper').style.display='none';
+    var lp=document.getElementById('letterPaper');
+    lp.style.display='block';setTimeout(function(){lp.classList.add('visible')},50);
+    setTimeout(typeNextChar,400);
+  },600);
+});
+
+// ── Bottom buttons ──
+document.getElementById('btnForgive').addEventListener('click',function(){
+  if(!typewriterDone)return;
+  path.forgive='direct';savePath();
+  celebrate(this);
+});
+document.getElementById('btnNo').addEventListener('click',function(){
+  if(!typewriterDone)return;
+  document.getElementById('overlay1').classList.add('active');
+});
+
+// ── Modal 1 ──
+document.getElementById('modal1Think').addEventListener('click',function(){
+  document.getElementById('overlay1').classList.remove('active');
+});
+document.getElementById('modal1No').addEventListener('click',function(){
+  document.getElementById('overlay1').classList.remove('active');
+  setTimeout(function(){
+    var sub=document.getElementById('modal2Sub');
+    var ok=document.getElementById('modal2Ok');
+    sub.innerHTML='<div class="apology-list">'+
+      '<div class="apology-item">🧋 请你喝奶茶，你最爱的口味</div>'+
+      '<div class="apology-item">🍲 带你吃火锅，你点菜我买单</div>'+
+      '<div class="apology-item">🎬 陪你看电影，你选片我不抢扶手</div>'+
+      '<div class="apology-item">🌸 陪你逛街，当好拎包机器人</div>'+
+      '</div>';
+    ok.style.display='block';
+    document.getElementById('overlay2').classList.add('active');
+  },350);
+});
+document.getElementById('modal2Ok').addEventListener('click',function(){
+  path.forgive='modal2';savePath();
+  document.getElementById('overlay2').classList.remove('active');
+  setTimeout(function(){celebrate(document.getElementById('modal2Ok'))},300);
+});
+
+// ── Path viewer panel ──
+document.getElementById('pathTrigger').addEventListener('click',function(){
+  var p=loadPath(),rows=document.getElementById('pathRows');
+  if(!p||(!p.choice&&!p.forgive)){rows.textContent='还没有数据~ 让她先玩一遍吧'}
+  else{
+    var h='';
+    if(p.choice==='yes')h+='想不想我：超级想！💕<br>';
+    else if(p.choice==='no')h+='想不想我：才不想呢 😒<br>';
+    else h+='想不想我：（未选择）<br>';
+    if(p.forgive==='direct')h+='原不原谅：直接原谅了 💕';
+    else if(p.forgive==='modal2')h+='原不原谅：被行动清单收买了 😤';
+    else h+='原不原谅：（未选择）';
+    rows.innerHTML=h;
+  }
+  document.getElementById('pathPanel').classList.add('visible');
+});
+document.getElementById('pathClose').addEventListener('click',function(){
+  document.getElementById('pathPanel').classList.remove('visible');
+});
+})();
+</script>
+</body>
+</html>

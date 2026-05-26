@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>对不起 💌</title>
 <style>
@@ -96,9 +97,14 @@ body{
 .path-title{font-size:15px;font-weight:600;color:#c94f6a;margin-bottom:12px}
 .path-rows{font-size:14px;color:#5a3a3a;line-height:2.2}
 .path-close{margin-top:14px;padding:7px 24px;background:transparent;border:1px solid #e0c8cd;border-radius:50px;color:#b38a90;font-size:13px;cursor:pointer}
+.music-toggle{position:fixed;top:20px;right:20px;z-index:100;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(210,150,160,.35);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .35s;box-shadow:0 2px 12px rgba(0,0,0,.06);line-height:1;padding:0;outline:none}
+.music-toggle:active{transform:scale(.88)}
+.music-toggle.muted{opacity:.45;background:rgba(255,255,255,.5)}
 </style>
 </head>
 <body>
+<button class="music-toggle muted" id="musicToggle" title="点击开启音乐">🎵</button>
+<audio id="bgMusic" loop preload="auto"></audio>
 
 <canvas id="particlesCanvas"></canvas>
 
@@ -320,7 +326,7 @@ function celebrate(src){
 // ── Envelope ──
 var opened=false;
 document.getElementById('envelopeWrapper').addEventListener('click',function(){
-  if(opened)return;opened=true;
+  if(opened)return;opened=true;initAudio();
   document.getElementById('envelopeFlap').classList.add('open');
   document.getElementById('seal').classList.add('hidden');
   document.getElementById('tapHint').style.display='none';
@@ -387,6 +393,32 @@ document.getElementById('pathTrigger').addEventListener('click',function(){
 document.getElementById('pathClose').addEventListener('click',function(){
   document.getElementById('pathPanel').classList.remove('visible');
 });
+// ── Background Music (local MP3) ──
+var bgMusic=document.getElementById("bgMusic");
+var musicPlaying=false;
+function initAudio(){
+  if(!bgMusic.src){
+    bgMusic.src="./music/balalaika.mp3";
+  }
+  if(musicPlaying){toggleMusic();return;}
+  bgMusic.play().then(function(){
+    musicPlaying=true;
+    var btn=document.getElementById("musicToggle");
+    btn.classList.remove("muted");btn.textContent="🎵";
+  })["catch"](function(){});
+}
+function toggleMusic(){
+  var btn=document.getElementById("musicToggle");
+  if(musicPlaying){
+    bgMusic.pause();btn.classList.add("muted");btn.textContent="🔇";
+  }else{
+    bgMusic.play().then(function(){
+      btn.classList.remove("muted");btn.textContent="🎵";
+    })["catch"](function(){});
+  }
+  musicPlaying=!musicPlaying;
+}
+document.getElementById("musicToggle").addEventListener("click",initAudio);
 })();
 </script>
 </body>

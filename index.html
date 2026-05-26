@@ -230,7 +230,7 @@ var part2=[
   '',
   '所以——',
   '',
-  '对不起。'
+  '今后的日子里也请多多关照。'
 ];
 var full1=part1.join('\n'),full2=part2.join('\n');
 var letterEl=document.getElementById('letterText');
@@ -266,7 +266,7 @@ function typeNextChar(){
 document.getElementById('choiceYes').addEventListener('click',function(){
   path.choice='yes';savePath();
   document.getElementById('letterChoices').classList.remove('visible');
-  feedbackText='（嘿嘿，我就知道 😊❤️）';charIdx=0;
+  feedbackText='（嘿嘿，我就知道，我也超级想陈同学。 😊❤️）';charIdx=0;
   cursorEl.style.display='inline-block';typeNextChar();
 });
 document.getElementById('choiceNo').addEventListener('click',function(){

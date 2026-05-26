@@ -411,6 +411,8 @@ function celebrate(src){
 // ── Envelope ──
 var opened=false;
 document.getElementById('envelopeWrapper').addEventListener('click',function(){
+
+  document.getElementById('envelopeWrapper').addEventListener('touchstart',function(e){e.preventDefault();if(!opened){opened=true;initAudio();}});
   if(opened)return;opened=true;initAudio();
   document.getElementById('envelopeFlap').classList.add('open');
   document.getElementById('seal').classList.add('hidden');
@@ -480,11 +482,20 @@ document.getElementById('pathClose').addEventListener('click',function(){
 });
 // 🎵 Background Music + Player
 // 🎵 Music Player
-var bgMusic=document.getElementById("bgMusic");
+var bgMusic=document.getElementById("bgMusic");bgMusic.load();
 var musicPlaying=false,pTimer=null,playMode=0;
 var playModes=["🔁","🔀","🔂"];
 
+
+// WeChat browser audio fix
+(function(){if(typeof WeixinJSBridge!=="undefined")WeixinJSBridge.invoke("getNetworkType",{})})();
+document.addEventListener("WeixinJSBridgeReady",function(){try{WeixinJSBridge.invoke("getNetworkType",{})}catch(e){}},false);
+
+function wechatFix(){try{if(typeof WeixinJSBridge!=="undefined")WeixinJSBridge.invoke("getNetworkType",{})}catch(e){}}wechatFix();
+function unlockAudio(){try{var c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator();o.connect(c.destination);o.start(0);o.stop(.001);c.resume()}catch(e){}}
+function playMusic(){if(!bgMusic.src)bgMusic.src="./music/balalaika.mp3";bgMusic.play().then(function(){musicPlaying=true;showBar();updateBar();var btn=document.getElementById("musicToggle");btn.classList.remove("muted");btn.textContent="🎵";startPUpdate();})["catch"](function(){})}
 function initAudio(){
+  unlockAudio();
   if(!bgMusic.src){bgMusic.src="./music/balalaika.mp3";}
   if(musicPlaying){toggleMusic();return;}
   bgMusic.play().then(function(){
@@ -581,6 +592,7 @@ document.getElementById("lyricOverlay").addEventListener("click",function(e){
 // Music toggle button (top-right)
 document.getElementById("musicToggle").addEventListener("click",initAudio);
 bgMusic.volume=0.6;
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&musicPlaying&&bgMusic.paused)bgMusic.play()["catch"](function(){})});
 })();
 </script>
 </body>
